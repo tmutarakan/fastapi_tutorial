@@ -1,56 +1,33 @@
-
-
 from typing import Annotated
 
-from fastapi import Body, FastAPI
-from pydantic import BaseModel
+from fastapi import FastAPI, File, UploadFile
+from fastapi.responses import HTMLResponse
 
 app = FastAPI()
 
 
-class Item(BaseModel):
-    name: str
-    description: str | None = None
-    price: float
-    tax: float | None = None
+@app.post("/files/")
+async def create_files(files: Annotated[list[bytes], File()]):
+    return {"file_sizes": [len(file) for file in files]}
 
 
-@app.put("/items/{item_id}")
-async def update_item(
-    *,
-    item_id: int,
-    item: Annotated[
-        Item,
-        Body(
-            openapi_examples={
-                "normal": {
-                    "summary": "A normal example",
-                    "description": "A **normal** item works correctly.",
-                    "value": {
-                        "name": "Foo",
-                        "description": "A very nice Item",
-                        "price": 35.4,
-                        "tax": 3.2,
-                    },
-                },
-                "converted": {
-                    "summary": "An example with converted data",
-                    "description": "FastAPI can convert price `strings` to actual `numbers` automatically",
-                    "value": {
-                        "name": "Bar",
-                        "price": "35.4",
-                    },
-                },
-                "invalid": {
-                    "summary": "Invalid data is rejected with an error",
-                    "value": {
-                        "name": "Baz",
-                        "price": "thirty five point four",
-                    },
-                },
-            },
-        ),
-    ],
-):
-    results = {"item_id": item_id, "item": item}
-    return results
+@app.post("/uploadfiles/")
+async def create_upload_files(files: list[UploadFile]):
+    return {"filenames": [file.filename for file in files]}
+
+
+@app.get("/")
+async def main():
+    content = """
+<body>
+<form action="/files/" enctype="multipart/form-data" method="post">
+<input name="files" type="file" multiple>
+<input type="submit">
+</form>
+<form action="/uploadfiles/" enctype="multipart/form-data" method="post">
+<input name="files" type="file" multiple>
+<input type="submit">
+</form>
+</body>
+    """
+    return HTMLResponse(content=content)
