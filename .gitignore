@@ -9,4 +9,8 @@ dist/
 build/
 .pytest_cache/
 .mypy_cache/
+
 .pylintrc
+.vscode/
+.idea/
+*.db
