@@ -1,26 +1,23 @@
-from fastapi import FastAPI, Request, WebSocket
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from a2wsgi import WSGIMiddleware
+from fastapi import FastAPI
+from flask import Flask, request
+from markupsafe import escape
+
+flask_app = Flask(__name__)
+
+
+@flask_app.route("/")
+def flask_main():
+    name = request.args.get("name", "World")
+    return f"Hello, {escape(name)} from Flask!"
+
 
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/v2")
+def read_main():
+    return {"message": "Hello World"}
 
 
-templates = Jinja2Templates(directory="templates")
-
-
-@app.get("/", response_class=HTMLResponse)
-async def get(request: Request):
-    return templates.TemplateResponse(
-        request=request, name="item.html", context={}
-    )
-
-
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    while True:
-        data = await websocket.receive_text()
-        await websocket.send_text(f"Message text was: {data}")
+app.mount("/v1", WSGIMiddleware(flask_app))
